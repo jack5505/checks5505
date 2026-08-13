@@ -4,7 +4,11 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -104,5 +108,66 @@ class ValidatorTest {
         ValidationResult result = Validator.validate(new Counter(1));
 
         assertEquals(List.of(), result.errors());
+    }
+
+    @Test
+    void validateReadsPrivateFieldFromPlainClass() {
+        assertTrue(Validator.validate(new Account(42)).isValid());
+        assertFalse(Validator.validate(new Account(-1)).isValid());
+    }
+
+    @Check(rule = "balance >= 0", message = "balance не может быть отрицательным")
+    static final class Account {
+        private final int balance;
+
+        Account(int balance) {
+            this.balance = balance;
+        }
+    }
+
+    @Test
+    void validateUsesGetterWhenFieldNameMatchesOnlyMethod() {
+        assertTrue(Validator.validate(new Wallet(100)).isValid());
+        assertFalse(Validator.validate(new Wallet(-1)).isValid());
+    }
+
+    @Check(rule = "total >= 0", message = "total не может быть отрицательным")
+    static final class Wallet {
+        private final int internalTotal;
+
+        Wallet(int internalTotal) {
+            this.internalTotal = internalTotal;
+        }
+
+        public int total() {
+            return internalTotal;
+        }
+    }
+
+    @Test
+    void validateIsSafeUnderConcurrentUse() throws Exception {
+        Transfer valid = new Transfer(new BigDecimal("100"), "recipient", LocalDate.now(), "TRANSFER");
+        int threads = 8;
+        int iterations = 5_000;
+
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        try {
+            List<Future<Boolean>> futures = new ArrayList<>();
+            for (int t = 0; t < threads; t++) {
+                futures.add(pool.submit(() -> {
+                    for (int i = 0; i < iterations; i++) {
+                        if (!Validator.validate(valid).isValid()) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }));
+            }
+            for (Future<Boolean> future : futures) {
+                assertTrue(future.get(), "concurrent validation must always pass on a valid object");
+            }
+        } finally {
+            pool.shutdownNow();
+        }
     }
 }

@@ -24,6 +24,18 @@ public final class Validator {
     }
 
     /**
+     * Compiled rules per class. {@link ClassValue} is the right cache here:
+     * the JVM manages entries and drops them together with the class, so a
+     * long-running application with hot class reloading cannot leak memory.
+     */
+    private static final ClassValue<CompiledChecks> CACHE = new ClassValue<>() {
+        @Override
+        protected CompiledChecks computeValue(Class<?> type) {
+            return CompiledChecks.compile(type);
+        }
+    };
+
+    /**
      * Validates {@code target} against all {@link Check} rules on its class
      * and collects every failure.
      *
@@ -32,21 +44,8 @@ public final class Validator {
     public static ValidationResult validate(Object target) {
         Objects.requireNonNull(target, "target must not be null");
 
-        List<Check> checks = findChecks(target.getClass());
         List<ValidationError> errors = new ArrayList<>();
-
-        for (Check check : checks) {
-            boolean condition = ExpressionEvaluator.evaluate(target, check.when());
-            if (!condition) {
-                continue;
-            }
-            boolean rulePassed = ExpressionEvaluator.evaluate(target, check.rule());
-            if (!rulePassed) {
-                String field = ExpressionEvaluator.fieldNameOf(check.rule());
-                Object rejectedValue = field == null ? null : ExpressionEvaluator.readField(target, field);
-                errors.add(new ValidationError(field, check.message(), rejectedValue));
-            }
-        }
+        CACHE.get(target.getClass()).validate(target, errors);
         return new ValidationResult(errors);
     }
 
@@ -66,24 +65,8 @@ public final class Validator {
      */
     public static void compile(Class<?> type) {
         Objects.requireNonNull(type, "type must not be null");
-        for (Check check : findChecks(type)) {
-            ExpressionEvaluator.verify(type, check.when());
-            ExpressionEvaluator.verify(type, check.rule());
-        }
-    }
-
-    /** Collects repeatable {@link Check} annotations (single or contained in {@link Check.List}). */
-    private static List<Check> findChecks(Class<?> type) {
-        List<Check> checks = new ArrayList<>();
-
-        Check single = type.getAnnotation(Check.class);
-        if (single != null) {
-            checks.add(single);
-        }
-        Check.List container = type.getAnnotation(Check.List.class);
-        if (container != null) {
-            checks.addAll(List.of(container.value()));
-        }
-        return checks;
+        // Compiling every rule eagerly: malformed expressions and missing
+        // fields surface here, not on a validation call.
+        CACHE.get(type);
     }
 }
