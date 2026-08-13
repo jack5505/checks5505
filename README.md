@@ -98,4 +98,4 @@ Requires JDK 21+ to run; the build compiles to Java 21 bytecode.
 
 ## License
 
-This project is not yet licensed.
+[MIT](LICENSE)
