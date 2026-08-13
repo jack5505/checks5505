@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "io.github.jack5505"
-version = "0.1.0"
+version = "0.2.0"
 
 java {
     // Библиотека должна работать на Java 21+.
@@ -56,7 +56,7 @@ tasks.register<JavaExec>("jmh") {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.jack5505", "checks5505", "0.1.0")
+    coordinates("io.github.jack5505", "checks5505", "0.2.0")
 
     pom {
         name = "checks5505"
