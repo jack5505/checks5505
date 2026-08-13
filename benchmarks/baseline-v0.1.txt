@@ -1,0 +1,22 @@
+# checks5505 — JMH baseline v0.1.0 (before optimization)
+
+Date: 2026-08-13
+Machine: MacBook (Apple Silicon, arm64)
+JVM: OpenJDK 26.0.2 (Homebrew, /opt/homebrew/Cellar/openjdk/26.0.2)
+JMH: 1.37, mode: Throughput (ops/s), 1 fork, 3 warmup (1s) + 5 measurement (2s) iterations
+
+Command:
+  JAVA_HOME=/opt/homebrew/opt/openjdk ./gradlew jmh
+
+Results:
+  ValidatorBenchmark.validTransfer    829,596 ops/s  (± 1.7%)
+  ValidatorBenchmark.invalidTransfer  529,949 ops/s  (± 80.4%)
+
+Notes:
+- validTransfer: all 4 rules pass (happy path).
+- invalidTransfer: 3 rules fail, all errors collected. Huge variance
+  (±80%) on the error path — expected: every call allocates new constants
+  (BigDecimal/Long parsing) and error records; GC noise. Should tighten
+  after Stage 2 removes per-call parsing/allocation.
+- WARNING about sun.misc.Unsafe::objectFieldOffset comes from JMH itself
+  on JDK 26, not from checks5505.

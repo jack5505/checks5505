@@ -17,6 +17,11 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
+// JMH benchmarks: manual source set, no third-party Gradle plugin.
+// Run: JAVA_HOME=/opt/homebrew/opt/openjdk ./gradlew jmh
+// Override JMH parameters: ./gradlew jmh -PjmhArgs="-f 2 -i 10"
+val jmh = sourceSets.create("jmh")
+
 repositories {
     mavenCentral()
 }
@@ -25,10 +30,27 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    add("jmhImplementation", sourceSets.main.get().output)
+    add("jmhImplementation", "org.openjdk.jmh:jmh-core:1.37")
+    add("jmhAnnotationProcessor", "org.openjdk.jmh:jmh-generator-annprocess:1.37")
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.register<JavaExec>("jmh") {
+    group = "benchmark"
+    description = "Runs JMH benchmarks (override with -PjmhArgs)"
+    dependsOn(tasks.named("jmhClasses"))
+    classpath = jmh.runtimeClasspath
+    mainClass.set("org.openjdk.jmh.Main")
+    if (project.hasProperty("jmhArgs")) {
+        args((project.property("jmhArgs") as String).split(Regex("\\s+")))
+    } else {
+        args("-f", "1", "-wi", "3", "-i", "5", "-w", "1s", "-r", "2s")
+    }
 }
 
 mavenPublishing {
