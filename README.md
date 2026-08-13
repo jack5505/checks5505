@@ -74,7 +74,7 @@ Expressions are intentionally tiny:
 - `true` / `false`
 - constants: numbers (`0`, `3.14`), strings (`'TRANSFER'`), booleans
 
-Composite expressions (`&&`, `||`), arithmetic, and i18n message keys are planned for v0.2 — see [Roadmap](#roadmap).
+Composite expressions (`&&`, `||`), arithmetic, and i18n message keys are planned for v0.3 — see [Roadmap](#roadmap).
 
 ## How it differs from Bean Validation
 
@@ -83,10 +83,33 @@ Composite expressions (`&&`, `||`), arithmetic, and i18n message keys are planne
 - **Structured errors** — `field`, `message`, and `rejectedValue` per error, ready to serialize to JSON
 - **Compile-time safety net** — `Validator.compile()` turns expression typos into test failures
 
+## Performance
+
+Since v0.2 the rules of a class are compiled once and cached (via `ClassValue`),
+so validation no longer parses expressions or resolves fields reflectively on
+every call.
+
+JMH throughput (OpenJDK 26, Apple Silicon):
+
+- valid object, 4 rules: 0.83M → 20.6M validations/s (≈25×)
+- invalid object, 3 failures: 0.53M → 6.9M validations/s (≈13×)
+
+Run the benchmark yourself:
+
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk ./gradlew jmh
+```
+
+Raw baseline numbers live in `benchmarks/baseline-v0.1.txt`.
+
+We also benchmarked a MethodHandle-based implementation of field access:
+it added only ~2% on the happy path, so we kept the simpler reflective access.
+
 ## Roadmap
 
-- v0.2 — composite expressions (`&&`, `||`), i18n message keys, reflection caching
-- v0.3 — Maven Central release, field-path support for nested objects
+- v0.2 — performance: rules compiled once per class and cached (see [Performance](#performance))
+- v0.3 — composite expressions (`&&`, `||`), i18n message keys
+- v0.4 — field-path support for nested objects
 
 ## Building
 
