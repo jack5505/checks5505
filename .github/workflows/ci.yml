@@ -23,3 +23,46 @@ jobs:
 
       - name: Run tests
         run: ./gradlew test
+
+  publish:
+    # Only on pushes to main, and only after tests are green.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Read project version
+        id: version
+        run: |
+          VERSION=$(grep -oP '^version = "\K[^"]+' build.gradle.kts)
+          echo "Project version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check if version is already on Maven Central
+        id: published
+        run: |
+          if curl -sf -o /dev/null "https://repo1.maven.org/maven2/io/github/jack5505/checks5505/${{ steps.version.outputs.version }}/"; then
+            echo "already=true" >> "$GITHUB_OUTPUT"
+            echo "Version already published — skipping publication"
+          else
+            echo "already=false" >> "$GITHUB_OUTPUT"
+            echo "New version — will publish"
+          fi
+
+      - name: Publish to Maven Central
+        if: steps.published.outputs.already != 'true'
+        env:
+          CENTRAL_PORTAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+          CENTRAL_PORTAL_PASSWORD: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: ./gradlew publishAndReleaseToMavenCentral

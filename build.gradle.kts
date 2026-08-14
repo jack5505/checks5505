@@ -1,5 +1,6 @@
 plugins {
     java
+    signing
     id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
@@ -50,6 +51,16 @@ tasks.register<JavaExec>("jmh") {
         args((project.property("jmhArgs") as String).split(Regex("\\s+")))
     } else {
         args("-f", "1", "-wi", "3", "-i", "5", "-w", "1s", "-r", "2s")
+    }
+}
+
+// GPG-подпись. Локально ключ берётся из ~/.gradle/gradle.properties
+// (signing.secretKeyRingFile). В CI этого файла нет — ключ приходит как
+// GitHub Secret (signingInMemoryKey) и подписывает «из памяти».
+signing {
+    val key = providers.gradleProperty("signingInMemoryKey")
+    if (key.isPresent) {
+        useInMemoryPgpKeys(key.get(), providers.gradleProperty("signingInMemoryKeyPassword").getOrElse(""))
     }
 }
 
