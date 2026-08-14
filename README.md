@@ -2,6 +2,34 @@
 
 Annotation-based cross-field business rule validation for Java 21+.
 
+## Installation
+
+The library is published on Maven Central. Requires Java 21+.
+
+**Gradle (Kotlin DSL):**
+
+```kotlin
+implementation("io.github.jack5505:checks5505:0.2.0")
+```
+
+**Gradle (Groovy DSL):**
+
+```groovy
+implementation 'io.github.jack5505:checks5505:0.2.0'
+```
+
+**Maven:**
+
+```xml
+<dependency>
+  <groupId>io.github.jack5505</groupId>
+  <artifactId>checks5505</artifactId>
+  <version>0.2.0</version>
+</dependency>
+```
+
+No extra repositories are needed. Then annotate your class with `@Check` and call `Validator.validate(...)` — see [Quick example](#quick-example).
+
 ## The problem
 
 Bean Validation answers *"is this field non-null / a valid email?"* — but real backend services are full of rules like:
@@ -65,7 +93,7 @@ void rulesCompile() {
 
 A typo in a field name or an unsupported expression fails this test instead of exploding in production. Call `compile` for every class that carries `@Check` rules.
 
-## What v0.1 supports
+## Supported expressions
 
 Expressions are intentionally tiny:
 
