@@ -14,7 +14,8 @@ import java.util.regex.Pattern;
  * path contains no regex, no reflection lookup and no constant parsing.</p>
  */
 final class CompiledExpression {
-
+    private final static String TRUE = "true";
+    private final static String FALSE = "false";
     /** field OP constant — field: identifier, op: comparison, constant: anything non-empty */
     private static final Pattern COMPARISON = Pattern.compile("^(\\w+)\\s*(==|!=|>=|<=|>|<)\\s*(\\S.*)$");
 
@@ -50,10 +51,10 @@ final class CompiledExpression {
     static CompiledExpression compile(Class<?> type, String expression) {
         String expr = expression == null ? "" : expression.trim();
 
-        if ("true".equals(expr)) {
+        if (TRUE.equals(expr)) {
             return new CompiledExpression(expression, null, null, null, null, Boolean.TRUE);
         }
-        if ("false".equals(expr)) {
+        if (FALSE.equals(expr)) {
             return new CompiledExpression(expression, null, null, null, null, Boolean.FALSE);
         }
 
