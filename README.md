@@ -1,5 +1,10 @@
 # checks5505
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.jack5505/checks5505)](https://central.sonatype.com/artifact/io.github.jack5505/checks5505)
+[![CI](https://github.com/jack5505/checks5505/actions/workflows/ci.yml/badge.svg)](https://github.com/jack5505/checks5505/actions/workflows/ci.yml)
+[![Java](https://img.shields.io/badge/Java-21%2B-blue)](https://adoptium.net)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Annotation-based cross-field business rule validation for Java 21+.
 
 ## Installation
